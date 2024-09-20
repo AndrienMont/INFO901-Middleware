@@ -23,6 +23,7 @@ class Process(Thread):
         self.myProcessName = name
         self.setName("MainThread-" + name)
         self.communicator = Com(0, self)
+        self.tokenState = None
 
         PyBus.Instance().register(self, self)
 

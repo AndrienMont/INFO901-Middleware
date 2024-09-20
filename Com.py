@@ -13,6 +13,7 @@ class Com(Thread):
         PyBus.Instance().register(self, self)
 
         self.owner = process.myId
+        self.process = process
         self.lamportClock = clock
         self.clockSemaphor = threading.Semaphore()
         self.mailBox = []
@@ -64,3 +65,26 @@ class Com(Thread):
     def broadcast(self, content):
         self.inc_clock()
         PyBus.Instance().post(BroadcastMessage(exp = self.owner, content = content, clock = self.lamportClock))
+
+    
+    @subscribe(threadMode=Mode.PARALLEL, onEvent=Token)
+    def onToken(self, event):
+        if self.owner == event.dest and self.process.alive : 
+            sleep(1)
+            if self.process.state == "request" :
+                self.process.state == "SC"
+                while self.process.state == "SC" :
+                    sleep(1)
+            self.sendTokenTo(Token(event.dest + 1) % self.process.npProcess)
+            self.process.state = None
+
+    def requestSC(self) : 
+        self.process.state = "request"
+        while self.process.state != "SC" : 
+            sleep(1)
+
+    def releaseSC(self) : 
+        self.process.state = "release"
+
+    def sendTokenTo(self, tok : Token) : 
+        PyBus.Instance().post(tok)
