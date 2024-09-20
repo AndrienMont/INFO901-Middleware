@@ -18,6 +18,8 @@ class Com(Thread):
         self.clockSemaphor = threading.Semaphore()
         self.tokenLock = threading.Event()
         self.syncLock = threading.Barrier(self.process.npProcess)
+        self.senderLockSync = threading.Event()
+        self.receiverLockSync = threading.Event()
         self.mailBox = []
 
     def inc_clock(self):
@@ -133,3 +135,61 @@ class Com(Thread):
         Locks the processess until they're all synchronized
         '''
         self.syncLock.wait()
+
+    @subscribe(threadMode=Mode.PARALLEL, onEvent=BroadcastSync)
+    def onBroadcastSync(self, event):
+        '''
+        Receives and processes a BroadcastSync event
+        '''
+        if event.exp != self.owner : 
+            if self.lamportClock > event.clockStamp:
+                self.inc_clock()
+            else:
+                self.lamportClock = event.clockStamp + 1
+            self.addMessage(event)
+            self.synchronize()
+
+    def broadcastSync(self, payload, exp):
+        '''
+        Broadcasts a BroadcastSync event to all processes
+        '''
+        if self.owner == exp :
+            self.inc_clock()
+            message = BroadcastSync(exp = self.owner, content = payload, clock = self.lamportClock)
+            PyBus.Instance().post(message)
+            self.synchronize()
+
+    @subscribe(threadMode=Mode.PARALLEL, onEvent=SyncDedicatedMessage)
+    def onReceiveSync(self, event):
+        '''
+        Receives and processes a SyncDedicatedMessage event
+        '''
+        if event.dest == self.owner:
+            if self.lamportClock < event.clockStamp:
+                self.inc_clock()
+            else:
+                self.lamportClock = event.clockStamp + 1
+            self.addMessage(event)
+            self.senderLockSync.set()
+
+    def sendToSync(self, content, dest):
+        '''
+        Sends a SyncDedicatedMessage event to the specified destination
+        '''
+        self.inc_clock()
+        PyBus.Instance().post(SyncDedicatedMessage(exp = self.owner, content = content, clock = self.lamportClock, dest = dest))
+        self.senderLockSync.clear()
+        self.senderLockSync.wait(10)
+
+    def receiveSync(self, msg):
+        '''
+        Receives a SyncDedicatedMessage event
+        '''
+        self.receiverLockSync.clear()
+        self.receiverLockSync.wait(10)
+        if self.lamportClock < msg.clockStamp:
+            self.inc_clock()
+        else:
+            self.lamportClock = msg.clockStamp + 1
+        self.addMessage(msg)
+        PyBus.Instance().post(SyncDedicatedMessage(exp = self.owner, content = "ACK", clock = self.lamportClock, dest = msg.exp))
