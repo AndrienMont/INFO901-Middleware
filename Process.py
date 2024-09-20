@@ -52,7 +52,10 @@ class Process(Thread):
             #     message = self.communicator.getFirstMessage()
             #     if message and message.content:
             #         print(f"Process {self.myId} received: " + message.content)
-            
+            ##### SYNC TEST #####
+            print(f"Process {self.myId} is waiting for sync")
+            self.communicator.sync()
+            print(f"Process {self.myId} has finished sync")
 
             self.stop()
 

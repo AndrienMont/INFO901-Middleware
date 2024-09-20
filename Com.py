@@ -17,6 +17,7 @@ class Com(Thread):
         self.lamportClock = clock
         self.clockSemaphor = threading.Semaphore()
         self.tokenLock = threading.Event()
+        self.syncLock = threading.Barrier(self.process.npProcess)
         self.mailBox = []
 
     def inc_clock(self):
@@ -126,3 +127,9 @@ class Com(Thread):
         '''
         destination = (self.owner + 1) % self.process.npProcess
         PyBus.Instance().post(Token(destination))
+
+    def synchronize(self):
+        '''
+        Locks the processess until they're all synchronized
+        '''
+        self.syncLock.wait()
