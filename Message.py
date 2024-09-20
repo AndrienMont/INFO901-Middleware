@@ -1,11 +1,11 @@
 from abc import ABC
 
 class Message(ABC):
-    def __init__(self, expeditor = None, content = None, clockStamp = None, destination = None):
-        self.expeditor = expeditor
+    def __init__(self, exp = None, content = None, clockStamp = None, dest = None):
+        self.exp = exp
         self.content = content
         self.clockStamp = clockStamp
-        self.destination = destination
+        self.dest = dest
 
     
 class Token(Message):

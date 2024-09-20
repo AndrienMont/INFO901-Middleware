@@ -32,13 +32,22 @@ class Process(Thread):
 
     def run(self):
         while self.alive:
+            ##### DEDICATED MESSAGE TEST #####
+            # if self.myId == self.npProcess - 1:
+            #     self.communicator.sendTo("Hello", 0)
+            # elif self.myId == 0 :
+            #     sleep(1)
+            #     message = self.communicator.getFirstMessage().content
+            #     if message:
+            #         print(f"Process 0 received: " + message)
+            ##### BROADCAST TEST #####
             if self.myId == self.npProcess - 1:
-                self.communicator.sendTo("Hello", "MainThread-0")
-            elif self.myId == 0 :
+                self.communicator.broadcast("Hey")
+            else:
                 sleep(1)
-                message = self.communicator.getFirstMessage().content
-                if message:
-                    print(f"Process 0 received: " + message)
+                message = self.communicator.getFirstMessage()
+                if message and message.content:
+                    print(f"Process {self.myId} received: " + message.content)
             self.stop()
 
     def stop(self):

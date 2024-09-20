@@ -1,4 +1,5 @@
 import threading
+from time import sleep
 from Message import *
 
 from pyeventbus3.pyeventbus3 import *
@@ -35,14 +36,31 @@ class Com(Thread):
 
     @subscribe(threadMode=Mode.PARALLEL, onEvent=DedicatedMessage)
     def onReceive(self, event):
-        if event.destination == self.getName():
+        if event.dest == self.owner:
             if self.lamportClock < event.clockStamp:
                 self.inc_clock()
             else:
                 self.lamportClock = event.clockStamp + 1
-        self.addMessage(event)
-        print(self.getName() + " receives: " + event.content + " from " + event.expeditor + " at " + str(event.clockStamp))
+            self.addMessage(event)
+            print(str(self.owner) + " receives: " + event.content + " at " + str(event.clockStamp))
 
     def sendTo(self, content, destination):
         self.inc_clock()
-        PyBus.Instance().post(DedicatedMessage(exp = self.getName(), content = content, clock = self.lamportClock, dest = destination))
+        PyBus.Instance().post(DedicatedMessage(exp = self.owner, content = content, clock = self.lamportClock, dest = destination))
+
+    @subscribe(threadMode=Mode.PARALLEL, onEvent=BroadcastMessage)
+    def onBroadcast(self, event):
+        if event.exp != self.owner :
+            sleep(1)
+            if self.lamportClock > event.clockStamp:
+                self.inc_clock()
+            else:
+                self.lamportClock = event.clockStamp + 1
+            if event not in self.mailBox : 
+                self.addMessage(event)
+            print(str(self.owner) + " receives: " + event.content + " at " + str(event.clockStamp))
+            sleep(1)
+
+    def broadcast(self, content):
+        self.inc_clock()
+        PyBus.Instance().post(BroadcastMessage(exp = self.owner, content = content, clock = self.lamportClock))
