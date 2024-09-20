@@ -101,7 +101,8 @@ class Com(Thread):
                 self.process.state == "SC"
                 self.tokenLock.clear()
                 self.tokenLock.wait(10)
-            self.sendTokenTo(Token(event.dest + 1) % self.process.npProcess)
+            event.setDest((self.owner + 1) % self.process.npProcess)
+            PyBus.instance().post(event)
             self.process.state = None
 
     def requestSC(self) : 
@@ -119,8 +120,9 @@ class Com(Thread):
         self.process.state = "release"
         self.tokenLock.set()
 
-    def sendTokenTo(self, tok : Token) : 
+    def firstTokenSend(self) : 
         '''
-        Sends a Token event to the next process
+        Sends the first token to the next process
         '''
-        PyBus.Instance().post(tok)
+        destination = (self.owner + 1) % self.process.npProcess
+        PyBus.Instance().post(Token(destination))

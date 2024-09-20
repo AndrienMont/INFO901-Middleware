@@ -12,6 +12,9 @@ class Token(Message):
     def __init__(self, dest):
         super().__init__(dest=dest)
 
+    def setDest(self, dest):
+        self.dest = dest
+
 class DedicatedMessage(Message):
     def __init__(self, exp, content, clock, dest):
         super().__init__(exp, content, clock, dest)
